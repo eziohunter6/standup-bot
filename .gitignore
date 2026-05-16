@@ -1,0 +1,20 @@
+# Secrets — NEVER commit these
+.env
+credentials.json
+token.json
+*.pem
+*.key
+
+# Personal config (each user maintains their own)
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

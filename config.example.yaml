@@ -1,0 +1,21 @@
+# standup-bot — configuration
+
+# Claude model used to compose the standup.
+# Haiku 4.5: fast, ~$0.001/run, perfectly capable for this task.
+# Sonnet 4.6: richer narrative, ~$0.02/run.
+model: claude-haiku-4-5-20251001
+
+# Max tokens for Claude's response (keeps standup tight)
+max_tokens: 600
+
+# Time zone for "yesterday" calculation. Defaults to IST.
+timezone: Asia/Kolkata
+
+# Optional: drop noisy meetings from calendar pull (substring match against summary)
+calendar_ignore:
+  - "1:1"
+  - "Lunch"
+  - "Focus"
+
+# Optional: cap how many GitHub repos to summarize (keeps prompt short)
+github_max_repos: 15
