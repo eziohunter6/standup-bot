@@ -81,14 +81,15 @@ def main() -> int:
         except Exception as exc:
             print(f"  Calendar: ERROR {exc}", file=sys.stderr)
 
-    if os.getenv("ANTHROPIC_API_KEY"):
+    have_llm = os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if have_llm:
         standup = compose_standup(activity, cfg)
         print("\n--- standup ---")
         print(standup)
         print("---------------\n")
     else:
         standup = None
-        print("\n(ANTHROPIC_API_KEY not set — skipping AI composition)")
+        print("\n(no LLM key set — set ANTHROPIC_API_KEY or GEMINI_API_KEY)")
         print("Raw activity preview:")
         for src in ("github", "figma", "calendar"):
             items = activity.get(src) or []

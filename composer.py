@@ -1,8 +1,12 @@
-"""Compose a PM-style standup from collected activity using Claude."""
+"""Compose a PM-style standup from collected activity.
 
+Picks an LLM provider based on env:
+  ANTHROPIC_API_KEY → Claude    (preferred when set; pay-per-token)
+  GEMINI_API_KEY    → Gemini    (free tier, generous limits, no card required)
+"""
+
+import os
 from typing import Dict
-
-from anthropic import Anthropic
 
 SYSTEM = """You write daily standup updates for a senior product designer.
 
@@ -25,21 +29,48 @@ Keep total length under 180 words. If activity is thin, say so honestly — neve
 
 
 def compose_standup(activity: Dict, cfg: Dict) -> str:
-    client = Anthropic()
     activity_text = _format_activity(activity)
-
     user_prompt = (
         f"Yesterday's activity (raw, deduplicated):\n\n{activity_text}\n\n"
         "Write today's standup."
     )
 
+    if os.getenv("ANTHROPIC_API_KEY"):
+        return _compose_anthropic(user_prompt, cfg)
+    if os.getenv("GEMINI_API_KEY"):
+        return _compose_gemini(user_prompt, cfg)
+    raise RuntimeError("Set ANTHROPIC_API_KEY or GEMINI_API_KEY")
+
+
+def _compose_anthropic(user_prompt: str, cfg: Dict) -> str:
+    from anthropic import Anthropic
+
+    client = Anthropic()
     resp = client.messages.create(
-        model=cfg.get("model", "claude-haiku-4-5-20251001"),
+        model=cfg.get("anthropic_model", "claude-haiku-4-5-20251001"),
         max_tokens=cfg.get("max_tokens", 600),
         system=SYSTEM,
         messages=[{"role": "user", "content": user_prompt}],
     )
     return resp.content[0].text.strip()
+
+
+def _compose_gemini(user_prompt: str, cfg: Dict) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    resp = client.models.generate_content(
+        model=cfg.get("gemini_model", "gemini-2.5-flash"),
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM,
+            max_output_tokens=cfg.get("max_tokens", 1500),
+            temperature=0.4,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    return (resp.text or "").strip()
 
 
 def _format_activity(activity: Dict) -> str:
